@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyTacticBtn = document.getElementById('copy-tactic');
     
     // Обработчики событий
-    jsonDataTextarea.addEventListener('input', extractTacticId);
     findTacticBtn.addEventListener('click', findTactic);
     clearJsonBtn.addEventListener('click', clearJsonData);
     copyTacticBtn.addEventListener('click', copyTacticData);
@@ -33,28 +32,95 @@ document.addEventListener('DOMContentLoaded', () => {
         let tacticMap = null;
         let tacticSide = null;
         
-        // Ищем скрытое поле с ID тактики
-        const hiddenFieldMatch = jsonText.match(/name="tactic_id"\s+value="(\d+)"/);
-        if (hiddenFieldMatch && hiddenFieldMatch[1]) {
-            tacticId = parseInt(hiddenFieldMatch[1]);
-        } else {
-            // Ищем ID тактики в формате id: NUMBER или "id": NUMBER
-            const idMatch = jsonText.match(/["|']?id["|']?\s*:\s*(\d+)/);
-            if (idMatch && idMatch[1]) {
-                tacticId = parseInt(idMatch[1]);
+        // Проверяем наличие блока matchData.tactic
+        if (jsonText.includes('matchData') && jsonText.includes('tactic:')) {
+            console.log('Найден блок matchData.tactic');
+            
+            // Ищем tacticId в matchData
+            const matchDataTacticIdMatch = jsonText.match(/tacticId\s*:\s*(\d+)/);
+            if (matchDataTacticIdMatch && matchDataTacticIdMatch[1]) {
+                tacticId = parseInt(matchDataTacticIdMatch[1]);
+                console.log(`Найден tacticId в matchData: ${tacticId}`);
+                
+                // Ищем начало блока tactic внутри matchData
+                const tacticStart = jsonText.indexOf('tactic:', jsonText.indexOf('matchData'));
+                if (tacticStart !== -1) {
+                    console.log('Найдено начало блока tactic внутри matchData');
+                    
+                    // Ищем открывающую фигурную скобку
+                    const objectStart = jsonText.indexOf('{', tacticStart);
+                    if (objectStart !== -1) {
+                        // Извлекаем часть текста для поиска карты и стороны
+                        const tacticText = jsonText.substring(objectStart, objectStart + 2000); // Берем первые 2000 символов для поиска
+                        console.log('Извлеченный текст tactic:', tacticText.substring(0, 200) + '...');
+                        
+                        // Ищем карту в блоке tactic
+                        const tacticMapMatch = tacticText.match(/map\s*:\s*["|']([^"']*)["|']/);
+                        if (tacticMapMatch && tacticMapMatch[1]) {
+                            tacticMap = tacticMapMatch[1];
+                            console.log(`Найдена карта в блоке tactic: ${tacticMap}`);
+                        } else {
+                            console.log('Карта не найдена в блоке tactic');
+                            // Пробуем другой формат поиска карты
+                            const altMapMatch = tacticText.match(/map\s*:\s*([^,}\s]+)/);
+                            if (altMapMatch && altMapMatch[1]) {
+                                tacticMap = altMapMatch[1].replace(/['"]/g, '');
+                                console.log(`Найдена карта в альтернативном формате: ${tacticMap}`);
+                            }
+                        }
+                        
+                        // Ищем сторону в блоке tactic
+                        const tacticSideMatch = tacticText.match(/side\s*:\s*(\d+)/);
+                        if (tacticSideMatch && tacticSideMatch[1]) {
+                            tacticSide = parseInt(tacticSideMatch[1]);
+                            console.log(`Найдена сторона в блоке tactic: ${tacticSide}`);
+                        } else {
+                            console.log('Сторона не найдена в блоке tactic');
+                        }
+                    }
+                }
             }
         }
         
-        // Ищем карту в JSON
-        const mapMatch = jsonText.match(/["|']?map["|']?\s*:\s*["|']([^"']*)["|']/);
-        if (mapMatch && mapMatch[1]) {
-            tacticMap = mapMatch[1];
+        // Если не нашли в matchData.tactic, ищем в других местах
+        if (tacticId === null) {
+            // Ищем скрытое поле с ID тактики
+            const hiddenFieldMatch = jsonText.match(/name="tactic_id"\s+value="(\d+)"/);
+            if (hiddenFieldMatch && hiddenFieldMatch[1]) {
+                tacticId = parseInt(hiddenFieldMatch[1]);
+            } else {
+                // Ищем ID тактики в формате tacticId: NUMBER или "tacticId": NUMBER
+                const tacticIdMatch = jsonText.match(/["|']?tacticId["|']?\s*:\s*(\d+)/);
+                if (tacticIdMatch && tacticIdMatch[1]) {
+                    tacticId = parseInt(tacticIdMatch[1]);
+                    console.log(`Найден tacticId: ${tacticId}`);
+                } else {
+                    // Ищем ID тактики в формате id: NUMBER или "id": NUMBER
+                    const idMatch = jsonText.match(/["|']?id["|']?\s*:\s*(\d+)/);
+                    if (idMatch && idMatch[1]) {
+                        tacticId = parseInt(idMatch[1]);
+                        console.log(`Найден id: ${tacticId}`);
+                    }
+                }
+            }
         }
         
-        // Ищем сторону в JSON
-        const sideMatch = jsonText.match(/["|']?side["|']?\s*:\s*(\d+)/);
-        if (sideMatch && sideMatch[1]) {
-            tacticSide = parseInt(sideMatch[1]);
+        // Если не нашли карту в matchData.tactic, ищем в других местах
+        if (tacticMap === null) {
+            // Ищем карту в JSON
+            const mapMatch = jsonText.match(/["|']?map["|']?\s*:\s*["|']([^"']*)["|']/);
+            if (mapMatch && mapMatch[1]) {
+                tacticMap = mapMatch[1];
+            }
+        }
+        
+        // Если не нашли сторону в matchData.tactic, ищем в других местах
+        if (tacticSide === null) {
+            // Ищем сторону в JSON
+            const sideMatch = jsonText.match(/["|']?side["|']?\s*:\s*(\d+)/);
+            if (sideMatch && sideMatch[1]) {
+                tacticSide = parseInt(sideMatch[1]);
+            }
         }
         
         // Отображаем найденную информацию
@@ -62,22 +128,30 @@ document.addEventListener('DOMContentLoaded', () => {
             tacticIdInput.value = tacticId;
             tacticIdContainer.style.display = 'flex';
             console.log(`Автоматически найден ID тактики: ${tacticId}`);
+            console.log(`Значение поля ID тактики после установки: ${tacticIdInput.value}`);
         } else {
             tacticIdContainer.style.display = 'none';
         }
         
         if (tacticMap) {
-            document.getElementById('find-map').value = tacticMap;
+            const mapElement = document.getElementById('find-map');
+            console.log(`Устанавливаем карту: ${tacticMap}`);
+            mapElement.value = tacticMap;
             document.getElementById('tactic-map-container').style.display = 'flex';
             console.log(`Автоматически найдена карта: ${tacticMap}`);
+            console.log(`Значение поля карты после установки: ${mapElement.value}`);
         } else {
             document.getElementById('tactic-map-container').style.display = 'none';
         }
         
         if (tacticSide !== null) {
-            document.getElementById('find-side').value = tacticSide === 1 ? 'CT (1)' : 'T (0)';
+            const sideElement = document.getElementById('find-side');
+            const sideText = tacticSide === 1 ? 'CT (1)' : 'T (0)';
+            console.log(`Устанавливаем сторону: ${tacticSide} (${sideText})`);
+            sideElement.value = sideText;
             document.getElementById('tactic-side-container').style.display = 'flex';
             console.log(`Автоматически найдена сторона: ${tacticSide}`);
+            console.log(`Значение поля стороны после установки: ${sideElement.value}`);
         } else {
             document.getElementById('tactic-side-container').style.display = 'none';
         }
@@ -108,23 +182,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 tacticIdContainer.style.display = 'flex';
                 console.log(`Автоматически найден ID тактики: ${tacticId}`);
             } else {
-                // Ищем ID тактики в формате id: NUMBER или "id": NUMBER
-                const idMatch = jsonText.match(/["|']?id["|']?\s*:\s*(\d+)/);
-                if (idMatch && idMatch[1]) {
-                    tacticId = parseInt(idMatch[1]);
+                // Ищем ID тактики в формате tacticId: NUMBER или "tacticId": NUMBER
+                const tacticIdMatch = jsonText.match(/["|']?tacticId["|']?\s*:\s*(\d+)/);
+                if (tacticIdMatch && tacticIdMatch[1]) {
+                    tacticId = parseInt(tacticIdMatch[1]);
                     tacticIdInput.value = tacticId;
                     tacticIdContainer.style.display = 'flex';
-                    console.log(`Автоматически найден ID тактики: ${tacticId}`);
+                    console.log(`Автоматически найден tacticId: ${tacticId}`);
                 } else {
-                    alert('Не удалось найти ID тактики в JSON');
-                    return;
+                    // Ищем ID тактики в формате id: NUMBER или "id": NUMBER
+                    const idMatch = jsonText.match(/["|']?id["|']?\s*:\s*(\d+)/);
+                    if (idMatch && idMatch[1]) {
+                        tacticId = parseInt(idMatch[1]);
+                        tacticIdInput.value = tacticId;
+                        tacticIdContainer.style.display = 'flex';
+                        console.log(`Автоматически найден id: ${tacticId}`);
+                    } else {
+                        alert('Не удалось найти ID тактики в JSON');
+                        return;
+                    }
                 }
             }
         }
         
         try {
             // Проверяем, содержит ли JSON ID тактики напрямую
-            if (jsonText.includes(`id: ${tacticId}`) || jsonText.includes(`"id": ${tacticId}`)) {
+            if (jsonText.includes(`id: ${tacticId}`) || jsonText.includes(`"id": ${tacticId}`) || 
+                jsonText.includes(`tacticId: ${tacticId}`) || jsonText.includes(`"tacticId": ${tacticId}`)) {
                 console.log(`Найден ID тактики ${tacticId} в тексте JSON`);
                 
                 // Пытаемся найти тактику напрямую в тексте
@@ -155,7 +239,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             console.log('Извлечен полный блок тактики');
                             
                             // Проверяем, содержит ли блок нужный ID
-                            if (tacticText.includes(`id: ${tacticId}`) || tacticText.includes(`"id": ${tacticId}`)) {
+                            if (tacticText.includes(`id: ${tacticId}`) || tacticText.includes(`"id": ${tacticId}`) ||
+                                tacticText.includes(`tacticId: ${tacticId}`) || tacticText.includes(`"tacticId": ${tacticId}`)) {
                                 console.log(`Блок тактики содержит ID ${tacticId}`);
                                 
                                 // Извлекаем основные поля тактики
@@ -307,8 +392,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Не удалось найти блок tactics в JSON');
             }
             
-            // Ищем тактику только по ID
-            const tactic = tactics.find(t => t.id === tacticId);
+            // Ищем тактику по ID или tacticId
+            const tactic = tactics.find(t => t.id === tacticId || t.tacticId === tacticId);
             
             if (!tactic) {
                 throw new Error(`Тактика с ID ${tacticId} не найдена`);
@@ -316,13 +401,24 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Обновляем отображение карты и стороны
             if (tactic.map) {
-                document.getElementById('find-map').value = tactic.map;
+                console.log(`Устанавливаем карту: ${tactic.map}`);
+                const mapElement = document.getElementById('find-map');
+                mapElement.value = tactic.map;
+                console.log(`Значение поля карты после установки: ${mapElement.value}`);
                 document.getElementById('tactic-map-container').style.display = 'flex';
+            } else {
+                console.log('Карта не найдена в тактике');
             }
             
             if (tactic.side !== undefined) {
-                document.getElementById('find-side').value = tactic.side === 1 ? 'CT (1)' : 'T (0)';
+                console.log(`Устанавливаем сторону: ${tactic.side}`);
+                const sideElement = document.getElementById('find-side');
+                const sideText = tactic.side === 1 ? 'CT (1)' : 'T (0)';
+                sideElement.value = sideText;
+                console.log(`Значение поля стороны после установки: ${sideElement.value}`);
                 document.getElementById('tactic-side-container').style.display = 'flex';
+            } else {
+                console.log('Сторона не найдена в тактике');
             }
             
             // Отображаем найденную тактику
@@ -588,6 +684,172 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
+            // Ищем тактику в структуре matchData.tactic
+            console.log('Ищем тактику в структуре matchData.tactic');
+            if (jsonText.includes('matchData') && jsonText.includes('tactic:')) {
+                console.log('Найдены блоки matchData и tactic');
+                
+                // Ищем начало блока tactic внутри matchData
+                const tacticStart = jsonText.indexOf('tactic:', jsonText.indexOf('matchData'));
+                if (tacticStart !== -1) {
+                    console.log('Найдено начало блока tactic внутри matchData');
+                    
+                    // Ищем открывающую фигурную скобку
+                    const objectStart = jsonText.indexOf('{', tacticStart);
+                    if (objectStart !== -1) {
+                        console.log('Найдена открывающая фигурная скобка');
+                        
+                        // Ищем закрывающую фигурную скобку с учетом вложенности
+                        let bracketCount = 1;
+                        let objectEnd = objectStart + 1;
+                        
+                        while (bracketCount > 0 && objectEnd < jsonText.length) {
+                            if (jsonText[objectEnd] === '{') {
+                                bracketCount++;
+                            } else if (jsonText[objectEnd] === '}') {
+                                bracketCount--;
+                            }
+                            objectEnd++;
+                        }
+                        
+                        if (bracketCount === 0) {
+                            console.log('Найдена закрывающая фигурная скобка');
+                            
+                            // Извлекаем блок tactic
+                            const tacticBlock = jsonText.substring(objectStart, objectEnd);
+                            console.log('Извлечен блок tactic из matchData:', tacticBlock.substring(0, 100) + '...');
+                            
+                            try {
+                                // Пытаемся парсить как JSON
+                                const tacticJSON = JSON.parse(tacticBlock);
+                                console.log('Успешно распарсен блок tactic из matchData');
+                                return [tacticJSON]; // Возвращаем массив с одной тактикой
+                            } catch (jsonError) {
+                                console.error('Ошибка при парсинге блока tactic из matchData:', jsonError);
+                                
+                                // Если не удалось парсить напрямую, пробуем извлечь данные вручную
+                                try {
+                                    // Ищем ID тактики
+                                    const idMatch = /id:\s*(\d+)/.exec(tacticBlock);
+                                    if (idMatch && idMatch[1]) {
+                                        const tacticId = parseInt(idMatch[1]);
+                                        console.log(`Найден ID тактики: ${tacticId}`);
+                                        
+                                        // Ищем другие поля
+                                        const nameMatch = /name:\s*"([^"]*)"/.exec(tacticBlock);
+                                        const sideMatch = /side:\s*(\d+)/.exec(tacticBlock);
+                                        const teamIdMatch = /teamId:\s*(\d+)/.exec(tacticBlock);
+                                        const mapMatch = /map:\s*"([^"]*)"/.exec(tacticBlock);
+                                        
+                                        // Функция для извлечения waypoints из текста
+                                        function extractWaypointsFromText(text) {
+                                            try {
+                                                // Ищем начало массива waypoints
+                                                const waypointsStart = text.indexOf('[', text.indexOf('waypoints:'));
+                                                if (waypointsStart !== -1) {
+                                                    // Ищем конец массива waypoints с учетом вложенности
+                                                    let bracketCount = 1;
+                                                    let waypointsEnd = waypointsStart + 1;
+                                                    
+                                                    while (bracketCount > 0 && waypointsEnd < text.length) {
+                                                        if (text[waypointsEnd] === '[') {
+                                                            bracketCount++;
+                                                        } else if (text[waypointsEnd] === ']') {
+                                                            bracketCount--;
+                                                        }
+                                                        waypointsEnd++;
+                                                    }
+                                                    
+                                                    if (bracketCount === 0) {
+                                                        // Извлекаем массив waypoints
+                                                        const waypointsText = text.substring(waypointsStart, waypointsEnd);
+                                                        console.log('Извлечен массив waypoints');
+                                                        
+                                                        // Определяем формат waypoints
+                                                        if (waypointsText.includes('[[') && waypointsText.includes(']]')) {
+                                                            // Массивный формат
+                                                            console.log('Waypoints в массивном формате');
+                                                            return eval(waypointsText); // Используем eval для парсинга массивного формата
+                                                        }
+                                                    }
+                                                }
+                                            } catch (error) {
+                                                console.error('Ошибка при извлечении waypoints из текста:', error);
+                                            }
+                                            
+                                            return []; // Возвращаем пустой массив, если не удалось извлечь waypoints
+                                        }
+                                        
+                                        // Функция для извлечения postPlantWaypoints из текста
+                                        function extractPostPlantWaypointsFromText(text) {
+                                            try {
+                                                // Ищем начало массива postPlantWaypoints
+                                                const postPlantWaypointsStart = text.indexOf('[', text.indexOf('postPlantWaypoints:'));
+                                                if (postPlantWaypointsStart !== -1) {
+                                                    // Ищем конец массива postPlantWaypoints с учетом вложенности
+                                                    let bracketCount = 1;
+                                                    let postPlantWaypointsEnd = postPlantWaypointsStart + 1;
+                                                    
+                                                    while (bracketCount > 0 && postPlantWaypointsEnd < text.length) {
+                                                        if (text[postPlantWaypointsEnd] === '[') {
+                                                            bracketCount++;
+                                                        } else if (text[postPlantWaypointsEnd] === ']') {
+                                                            bracketCount--;
+                                                        }
+                                                        postPlantWaypointsEnd++;
+                                                    }
+                                                    
+                                                    if (bracketCount === 0) {
+                                                        // Извлекаем массив postPlantWaypoints
+                                                        const postPlantWaypointsText = text.substring(postPlantWaypointsStart, postPlantWaypointsEnd);
+                                                        console.log('Извлечен массив postPlantWaypoints');
+                                                        
+                                                        // Определяем формат postPlantWaypoints
+                                                        if (postPlantWaypointsText.includes('[[') && postPlantWaypointsText.includes(']]')) {
+                                                            // Массивный формат
+                                                            console.log('PostPlantWaypoints в массивном формате');
+                                                            return eval(postPlantWaypointsText); // Используем eval для парсинга массивного формата
+                                                        }
+                                                    }
+                                                }
+                                            } catch (error) {
+                                                console.error('Ошибка при извлечении postPlantWaypoints из текста:', error);
+                                            }
+                                            
+                                            return []; // Возвращаем пустой массив, если не удалось извлечь postPlantWaypoints
+                                        }
+                                        
+                                        // Ищем tacticId в matchData
+                                        const tacticIdMatch = jsonText.match(/tacticId\s*:\s*(\d+)/);
+                                        let matchDataTacticId = null;
+                                        if (tacticIdMatch && tacticIdMatch[1]) {
+                                            matchDataTacticId = parseInt(tacticIdMatch[1]);
+                                            console.log(`Найден tacticId в matchData: ${matchDataTacticId}`);
+                                        }
+                                        
+                                        // Создаем объект тактики
+                                        const tactic = {
+                                            id: tacticId,
+                                            tacticId: matchDataTacticId, // Добавляем tacticId из matchData
+                                            name: nameMatch ? nameMatch[1] : 'Неизвестная тактика',
+                                            side: sideMatch ? parseInt(sideMatch[1]) : 0,
+                                            teamId: teamIdMatch ? parseInt(teamIdMatch[1]) : 3782,
+                                            map: mapMatch ? mapMatch[1] : 'train',
+                                            waypoints: extractWaypointsFromText(tacticBlock),
+                                            postPlantWaypoints: extractPostPlantWaypointsFromText(tacticBlock)
+                                        };
+                                        
+                                        return [tactic];
+                                    }
+                                } catch (extractError) {
+                                    console.error('Ошибка при извлечении данных тактики:', extractError);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Пробуем найти блок tactics в формате "tactics: [{"
             console.log('Ищем блок tactics в формате "tactics: [{"');
             const tacticsRegex = /tactics\s*:\s*\[\s*\{\s*id\s*:/;
@@ -772,6 +1034,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Отображаем тактику
         tacticDataTextarea.value = formattedJSON;
+        
+        // Обновляем поля ввода в верхней части формы
+        if (formattedTactic.map) {
+            console.log(`Обновляем поле карты: ${formattedTactic.map}`);
+            const mapElement = document.getElementById('find-map');
+            mapElement.value = formattedTactic.map;
+            document.getElementById('tactic-map-container').style.display = 'flex';
+            console.log(`Значение поля карты после обновления: ${mapElement.value}`);
+        }
+        
+        if (formattedTactic.side !== undefined) {
+            console.log(`Обновляем поле стороны: ${formattedTactic.side}`);
+            const sideElement = document.getElementById('find-side');
+            const sideText = formattedTactic.side === 1 ? 'CT (1)' : 'T (0)';
+            sideElement.value = sideText;
+            document.getElementById('tactic-side-container').style.display = 'flex';
+            console.log(`Значение поля стороны после обновления: ${sideElement.value}`);
+        }
         
         // Показываем результат
         tacticResultContainer.style.display = 'block';
