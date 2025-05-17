@@ -160,9 +160,8 @@
     <div class="tabs">
         <button class="tab active" onclick="openTab(event, 'send-tactic-tab')">Отправить страту</button>
         <button class="tab" onclick="openTab(event, 'stats-tab')">Статистика тактик</button>
-        <button class="tab" onclick="openTab(event, 'converter-tab')">Конвертер</button>
+        <button class="tab" onclick="openTab(event, 'converter-tab')">Скопировать из симуляции</button>
         <button class="tab" onclick="openTab(event, 'match-tab')">Проиграть матч</button>
-        <button class="tab" onclick="openTab(event, 'find-tactic-tab')">Скопировать из симуляции</button>
     </div>
     
     <div class="container">
@@ -263,10 +262,10 @@
         </div>
         
         
-        <!-- Таб "Конвертер" -->
+        <!-- Таб "Скопировать из симуляции" -->
         <div id="converter-tab" class="tab-content">
             <div class="metadata-container">
-                <h2>Метаданные тактики</h2>
+                <h2>Скопировать из симуляции</h2>
                 <div class="metadata-form" id="new-metadata-container" style="display: none;">
                     <div class="form-group">
                         <label for="new-team-id">ID команды</label>
@@ -290,7 +289,7 @@
             <div class="conversion-container">
                 <div class="conversion-box">
                     <h2>Исходный JSON</h2>
-                    <textarea id="new-input-data" placeholder="Вставьте полный JSON с блоком matchData.tactic..."></textarea>
+                    <textarea id="new-input-data" placeholder="Вставьте JSON из симуляции с блоком matchData.tactic..."></textarea>
                     <div class="buttons">
                         <button id="new-convert-btn" class="primary">Конвертировать</button>
                         <button id="new-clear-btn" class="secondary">Очистить</button>
@@ -331,44 +330,6 @@
             </div>
         </div>
         
-        <!-- Таб "Скопировать из симуляции" -->
-        <div id="find-tactic-tab" class="tab-content">
-            <div class="metadata-container">
-                <h2>Скопировать из симуляции</h2>
-                <div class="form-group">
-                    <label for="json-data">Вставьте JSON-данные из симуляции:</label>
-                    <textarea id="json-data" placeholder="Вставьте большой JSON с блоком tactics..." style="height: 150px;"></textarea>
-                </div>
-                <div class="metadata-form" style="margin-top: 15px;">
-                    <div class="form-group" id="tactic-id-container" style="display: none;">
-                        <label for="tactic-id-search">ID тактики:</label>
-                        <input type="number" id="tactic-id-search" readonly>
-                    </div>
-                    <div class="form-group" id="tactic-map-container" style="display: none;">
-                        <label for="find-map">Карта:</label>
-                        <input type="text" id="find-map" readonly>
-                    </div>
-                    <div class="form-group" id="tactic-side-container" style="display: none;">
-                        <label for="find-side">Сторона:</label>
-                        <input type="text" id="find-side" readonly>
-                    </div>
-                </div>
-                <div class="buttons" style="justify-content: center; margin-top: 15px;">
-                    <button id="find-tactic" class="primary">Найти тактику</button>
-                    <button id="clear-json" class="secondary">Очистить</button>
-                </div>
-            </div>
-            
-            <div id="tactic-result" class="metadata-container" style="display: none; margin-top: 20px;">
-                <h2 style="text-align: center;">Найденная тактика</h2>
-                <div class="form-group">
-                    <textarea id="tactic-data" readonly style="height: 300px;"></textarea>
-                </div>
-                <div class="buttons" style="justify-content: center;">
-                    <button id="copy-tactic" class="primary">Копировать тактику</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
