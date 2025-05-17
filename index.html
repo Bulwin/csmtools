@@ -121,6 +121,19 @@
             margin-bottom: 0;
         }
         
+        .tab-description {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+            background-color: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 0 4px 4px 0;
+        }
+        
         /* Стили для табов */
         .tabs {
             display: flex;
@@ -169,6 +182,7 @@
         <div id="send-tactic-tab" class="tab-content active">
             <div class="metadata-container">
                 <h2>Отправить страту</h2>
+                <p class="tab-description">Тулза для копирования и отправки своих тактик. Откройте любую тактику и скопируйте ответ сервера в консоли браузера.</p>
                 <div class="metadata-form" id="send-metadata-container" style="display: none;">
                     <div class="form-group">
                         <label for="send-team-id">ID команды</label>
@@ -213,6 +227,7 @@
         <div id="stats-tab" class="tab-content">
             <div class="metadata-container">
                 <h2>Статистика тактик</h2>
+                <p class="tab-description">Тулза для просмотра чужих тактик и статистики по ним по айди игрока</p>
                 <div class="metadata-form">
                     <div class="form-group">
                         <label for="stats-team-id">ID команды</label>
@@ -266,6 +281,7 @@
         <div id="converter-tab" class="tab-content">
             <div class="metadata-container">
                 <h2>Скопировать из симуляции</h2>
+                <p class="tab-description">Тулза для копирования тактики из симуляции. Копируется уже в готовом формате для вставки. Вставьте ответ из браузера при открытии симуляции тактики</p>
                 <div class="metadata-form" id="new-metadata-container" style="display: none;">
                     <div class="form-group">
                         <label for="new-team-id">ID команды</label>
@@ -310,6 +326,7 @@
         <div id="match-tab" class="tab-content">
             <div class="metadata-container">
                 <h2>Проиграть матч</h2>
+                <p class="tab-description">Тулза для удобного просмотра сыгранного вами матча и копирования ссылок на симуляцию тактик из него. Вставьте отсвет с сервера при запуске вашего матча</p>
                 <div class="form-group">
                     <label for="match-data">Вставьте JSON-данные матча:</label>
                     <textarea id="match-data" placeholder="Вставьте JSON-данные матча..." style="height: 150px;"></textarea>
