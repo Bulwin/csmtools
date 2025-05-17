@@ -158,16 +158,60 @@
     
     <!-- Табы -->
     <div class="tabs">
-        <button class="tab active" onclick="openTab(event, 'stats-tab')">Статистика тактик</button>
+        <button class="tab active" onclick="openTab(event, 'send-tactic-tab')">Отправить страту</button>
+        <button class="tab" onclick="openTab(event, 'stats-tab')">Статистика тактик</button>
         <button class="tab" onclick="openTab(event, 'converter-tab')">Конвертер</button>
-        <button class="tab" onclick="openTab(event, 'converter-new-tab')">Конвертер NEW</button>
         <button class="tab" onclick="openTab(event, 'match-tab')">Проиграть матч</button>
-        <button class="tab" onclick="openTab(event, 'find-tactic-tab')">Найти стату</button>
+        <button class="tab" onclick="openTab(event, 'find-tactic-tab')">Скопировать из симуляции</button>
     </div>
     
     <div class="container">
+        <!-- Таб "Отправить страту" -->
+        <div id="send-tactic-tab" class="tab-content active">
+            <div class="metadata-container">
+                <h2>Отправить страту</h2>
+                <div class="metadata-form" id="send-metadata-container" style="display: none;">
+                    <div class="form-group">
+                        <label for="send-team-id">ID команды</label>
+                        <input type="number" id="send-team-id" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="send-tactic-name">Название тактики</label>
+                        <input type="text" id="send-tactic-name" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="send-map">Карта</label>
+                        <input type="text" id="send-map" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="send-side">Сторона</label>
+                        <input type="text" id="send-side" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="conversion-container">
+                <div class="conversion-box">
+                    <h2>Исходный JSON</h2>
+                    <textarea id="send-input-data" placeholder="Вставьте JSON с блоком data.tactic..."></textarea>
+                    <div class="buttons">
+                        <button id="send-convert-btn" class="primary">Конвертировать</button>
+                        <button id="send-clear-btn" class="secondary">Очистить</button>
+                    </div>
+                </div>
+                
+                <div class="conversion-box">
+                    <h2>Результат конвертации</h2>
+                    <textarea id="send-output-data" readonly></textarea>
+                    <div class="buttons">
+                        <button id="send-copy-btn">Копировать</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Таб "Статистика тактик" -->
-        <div id="stats-tab" class="tab-content active">
+        <div id="stats-tab" class="tab-content">
             <div class="metadata-container">
                 <h2>Статистика тактик</h2>
                 <div class="metadata-form">
@@ -218,59 +262,9 @@
             </div>
         </div>
         
+        
         <!-- Таб "Конвертер" -->
         <div id="converter-tab" class="tab-content">
-            <div class="metadata-container">
-                <h2>Метаданные тактики</h2>
-                <div class="metadata-form">
-                    <div class="form-group">
-                        <label for="team-id">ID команды</label>
-                        <input type="number" id="team-id" placeholder="Например: 3782">
-                    </div>
-                    <div class="form-group">
-                        <label for="tactic-name">Название тактики</label>
-                        <input type="text" id="tactic-name" placeholder="Например: Camp spawn - CT">
-                    </div>
-                    <div class="form-group">
-                        <label for="map">Карта</label>
-                        <select id="map">
-                            <option value="train">train</option>
-                            <option value="castle">castle</option>
-                            <option value="mill">mill</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="side">Сторона</label>
-                        <select id="side">
-                            <option value="1">CT (1)</option>
-                            <option value="0">T (0)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="conversion-container">
-                <div class="conversion-box">
-                    <h2>Исходный формат</h2>
-                    <textarea id="input-data" placeholder="Вставьте данные в любом из двух форматов..."></textarea>
-                    <div class="buttons">
-                        <button id="convert-to-full-ui" class="primary">Конвертировать</button>
-                        <button id="clear-input" class="secondary">Очистить</button>
-                    </div>
-                </div>
-                
-                <div class="conversion-box">
-                    <h2>Результат конвертации</h2>
-                    <textarea id="output-data" readonly></textarea>
-                    <div class="buttons">
-                        <button id="copy-output">Копировать</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Таб "Конвертер NEW" -->
-        <div id="converter-new-tab" class="tab-content">
             <div class="metadata-container">
                 <h2>Метаданные тактики</h2>
                 <div class="metadata-form" id="new-metadata-container" style="display: none;">
@@ -337,12 +331,12 @@
             </div>
         </div>
         
-        <!-- Таб "Найти стату" -->
+        <!-- Таб "Скопировать из симуляции" -->
         <div id="find-tactic-tab" class="tab-content">
             <div class="metadata-container">
-                <h2>Найти стату</h2>
+                <h2>Скопировать из симуляции</h2>
                 <div class="form-group">
-                    <label for="json-data">Вставьте JSON-данные:</label>
+                    <label for="json-data">Вставьте JSON-данные из симуляции:</label>
                     <textarea id="json-data" placeholder="Вставьте большой JSON с блоком tactics..." style="height: 150px;"></textarea>
                 </div>
                 <div class="metadata-form" style="margin-top: 15px;">
@@ -404,5 +398,6 @@
     <script src="match.js"></script>
     <script src="find-tactic.js"></script>
     <script src="converter-new.js"></script>
+    <script src="send-tactic.js"></script>
 </body>
 </html>
