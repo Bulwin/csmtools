@@ -160,6 +160,7 @@
     <div class="tabs">
         <button class="tab active" onclick="openTab(event, 'stats-tab')">Статистика тактик</button>
         <button class="tab" onclick="openTab(event, 'converter-tab')">Конвертер</button>
+        <button class="tab" onclick="openTab(event, 'converter-new-tab')">Конвертер NEW</button>
         <button class="tab" onclick="openTab(event, 'match-tab')">Проиграть матч</button>
         <button class="tab" onclick="openTab(event, 'find-tactic-tab')">Найти стату</button>
     </div>
@@ -268,6 +269,50 @@
             </div>
         </div>
         
+        <!-- Таб "Конвертер NEW" -->
+        <div id="converter-new-tab" class="tab-content">
+            <div class="metadata-container">
+                <h2>Метаданные тактики</h2>
+                <div class="metadata-form" id="new-metadata-container" style="display: none;">
+                    <div class="form-group">
+                        <label for="new-team-id">ID команды</label>
+                        <input type="number" id="new-team-id" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-tactic-name">Название тактики</label>
+                        <input type="text" id="new-tactic-name" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-map">Карта</label>
+                        <input type="text" id="new-map" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-side">Сторона</label>
+                        <input type="text" id="new-side" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="conversion-container">
+                <div class="conversion-box">
+                    <h2>Исходный JSON</h2>
+                    <textarea id="new-input-data" placeholder="Вставьте полный JSON с блоком matchData.tactic..."></textarea>
+                    <div class="buttons">
+                        <button id="new-convert-btn" class="primary">Конвертировать</button>
+                        <button id="new-clear-btn" class="secondary">Очистить</button>
+                    </div>
+                </div>
+                
+                <div class="conversion-box">
+                    <h2>Результат конвертации</h2>
+                    <textarea id="new-output-data" readonly></textarea>
+                    <div class="buttons">
+                        <button id="new-copy-btn">Копировать</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Таб "Проиграть матч" -->
         <div id="match-tab" class="tab-content">
             <div class="metadata-container">
@@ -358,5 +403,6 @@
     <script src="stats.js"></script>
     <script src="match.js"></script>
     <script src="find-tactic.js"></script>
+    <script src="converter-new.js"></script>
 </body>
 </html>
