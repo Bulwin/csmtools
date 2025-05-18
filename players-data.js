@@ -1,7 +1,7 @@
 /**
  * Функция для преобразования нестандартного JSON в стандартный формат
  * @param {string} jsonString - Строка с нестандартным JSON или HTML, содержащий JSON
- * @returns {Array} - Массив объектов игроков
+ * @returns {Object} - Объект с массивом игроков и информацией о команде
  */
 function parsePlayersData(jsonString) {
     try {
@@ -115,7 +115,13 @@ function parsePlayersData(jsonString) {
                     console.log('Результат парсинга данных игроков:', JSON.stringify(enhancedPlayers, null, 2));
                     console.log('Успешно извлечены данные о игроках:', enhancedPlayers.length);
                     
-                    return enhancedPlayers;
+                    // Ищем информацию о команде
+                    const teamInfo = extractTeamInfo(jsonString);
+                    
+                    return {
+                        players: enhancedPlayers,
+                        teamInfo: teamInfo
+                    };
                 }
             } catch (evalError) {
                 console.error('Ошибка при использовании eval для JavaScript-объекта:', evalError);
@@ -204,7 +210,13 @@ function parsePlayersData(jsonString) {
                     console.log('Результат парсинга данных игроков:', JSON.stringify(enhancedPlayers, null, 2));
                     console.log('Успешно извлечены данные о игроках:', enhancedPlayers.length);
                     
-                    return enhancedPlayers;
+                    // Ищем информацию о команде
+                    const teamInfo = extractTeamInfo(jsonString);
+                    
+                    return {
+                        players: enhancedPlayers,
+                        teamInfo: teamInfo
+                    };
                 }
             } catch (evalError) {
                 console.error('Ошибка при использовании eval для JavaScript-объекта (прямой подход):', evalError);
@@ -345,16 +357,189 @@ function parsePlayersData(jsonString) {
             console.log('Найдены данные игроков с помощью регулярного выражения (простой подход):', playerObjects.length);
             console.log('Результат парсинга данных игроков:', JSON.stringify(playerObjects, null, 2));
             console.log('Успешно извлечены данные о игроках:', playerObjects.length);
-            return playerObjects;
+            // Ищем информацию о команде
+            const teamInfo = extractTeamInfo(jsonString);
+            
+            return {
+                players: playerObjects,
+                teamInfo: teamInfo
+            };
         }
         
         // Если все методы не сработали, возвращаем пустой массив
         console.log('Не удалось извлечь данные о игроках');
-        return [];
+        return { players: [], teamInfo: null };
     } catch (error) {
         console.error('Ошибка при парсинге данных игроков:', error);
-        return [];
+        return { players: [], teamInfo: null };
     }
+}
+
+/**
+ * Функция для извлечения информации о команде и пользователе
+ * @param {string} jsonString - Строка с JSON или HTML
+ * @returns {Object|null} - Объект с информацией о команде и пользователе или null
+ */
+function extractTeamInfo(jsonString) {
+    try {
+        console.log('Извлечение информации о команде...');
+        
+        // Пробуем найти структуру data с информацией о команде
+        const dataMatch = jsonString.match(/data\s*:\s*\[\s*\{.*?\},\s*\{.*?\},\s*\{\s*"type":\s*"data",\s*"data":\s*{\s*team\s*:\s*(\{[^}]*(?:\{[^}]*\}[^}]*)*\})/s);
+        if (dataMatch && dataMatch[1]) {
+            console.log('Найдена структура data с информацией о команде');
+            const teamText = dataMatch[1];
+            
+            // Извлекаем основные поля команды
+            const teamName = extractValue(teamText, 'name');
+            const teamId = extractNumber(teamText, 'id');
+            const balance = extractNumber(teamText, 'balance');
+            const mediaPoints = extractNumber(teamText, 'mediaPoints');
+            const famePoints = extractNumber(teamText, 'famePoints');
+            
+            console.log('Извлеченная информация о команде:', { teamName, teamId, balance, mediaPoints, famePoints });
+            
+            // Ищем блок с информацией о пользователе
+            const userMatch = teamText.match(/user\s*:\s*(\{[^}]*(?:\{[^}]*\}[^}]*)*\})/s);
+            if (!userMatch) {
+                console.log('Информация о пользователе не найдена');
+                return {
+                    name: teamName,
+                    id: teamId,
+                    balance: balance,
+                    mediaPoints: mediaPoints,
+                    famePoints: famePoints,
+                    user: null
+                };
+            }
+            
+            const userText = userMatch[1];
+            
+            // Извлекаем поля пользователя
+            const username = extractValue(userText, 'username');
+            const email = extractValue(userText, 'email');
+            const coins = extractNumber(userText, 'coins');
+            const lastName = extractValue(userText, 'lastName');
+            const firstName = extractValue(userText, 'firstName');
+            const birthday = extractValue(userText, 'birthday');
+            const vipActive = extractBoolean(userText, 'vipActive');
+            const warningPoints = extractNumber(userText, 'warningPoints');
+            
+            console.log('Извлеченная информация о пользователе:', { username, email, coins, lastName, firstName });
+            
+            return {
+                name: teamName,
+                id: teamId,
+                balance: balance,
+                mediaPoints: mediaPoints,
+                famePoints: famePoints,
+                user: {
+                    username: username,
+                    email: email,
+                    coins: coins,
+                    lastName: lastName,
+                    firstName: firstName,
+                    birthday: birthday,
+                    vipActive: vipActive,
+                    warningPoints: warningPoints
+                }
+            };
+        }
+        
+        // Если не нашли в структуре data, пробуем найти напрямую
+        const teamMatch = jsonString.match(/team\s*:\s*(\{[^}]*(?:\{[^}]*\}[^}]*)*\})/s);
+        if (!teamMatch) {
+            console.log('Информация о команде не найдена');
+            return null;
+        }
+        
+        const teamText = teamMatch[1];
+        
+        // Извлекаем основные поля команды
+        const teamName = extractValue(teamText, 'name');
+        const teamId = extractNumber(teamText, 'id');
+        const balance = extractNumber(teamText, 'balance');
+        const mediaPoints = extractNumber(teamText, 'mediaPoints');
+        const famePoints = extractNumber(teamText, 'famePoints');
+        
+        console.log('Извлеченная информация о команде (прямой поиск):', { teamName, teamId, balance, mediaPoints, famePoints });
+        
+        // Ищем блок с информацией о пользователе
+        const userMatch = teamText.match(/user\s*:\s*(\{[^}]*(?:\{[^}]*\}[^}]*)*\})/s);
+        if (!userMatch) {
+            console.log('Информация о пользователе не найдена (прямой поиск)');
+            return {
+                name: teamName,
+                id: teamId,
+                balance: balance,
+                mediaPoints: mediaPoints,
+                famePoints: famePoints,
+                user: null
+            };
+        }
+        
+        const userText = userMatch[1];
+        
+        // Извлекаем поля пользователя
+        const username = extractValue(userText, 'username');
+        const email = extractValue(userText, 'email');
+        const coins = extractNumber(userText, 'coins');
+        const lastName = extractValue(userText, 'lastName');
+        const firstName = extractValue(userText, 'firstName');
+        const birthday = extractValue(userText, 'birthday');
+        const vipActive = extractBoolean(userText, 'vipActive');
+        const warningPoints = extractNumber(userText, 'warningPoints');
+        
+        console.log('Извлеченная информация о пользователе (прямой поиск):', { username, email, coins, lastName, firstName });
+        
+        return {
+            name: teamName,
+            id: teamId,
+            balance: balance,
+            mediaPoints: mediaPoints,
+            famePoints: famePoints,
+            user: {
+                username: username,
+                email: email,
+                coins: coins,
+                lastName: lastName,
+                firstName: firstName,
+                birthday: birthday,
+                vipActive: vipActive,
+                warningPoints: warningPoints
+            }
+        };
+    } catch (error) {
+        console.error('Ошибка при извлечении информации о команде:', error);
+        return null;
+    }
+}
+
+/**
+ * Вспомогательная функция для извлечения строкового значения
+ */
+function extractValue(text, fieldName) {
+    const regex = new RegExp(fieldName + '\\s*:\\s*["\']([^"\']*)["\']', 's');
+    const match = text.match(regex);
+    return match ? match[1] : null;
+}
+
+/**
+ * Вспомогательная функция для извлечения числового значения
+ */
+function extractNumber(text, fieldName) {
+    const regex = new RegExp(fieldName + '\\s*:\\s*(\\d+)', 's');
+    const match = text.match(regex);
+    return match ? parseInt(match[1]) : null;
+}
+
+/**
+ * Вспомогательная функция для извлечения булевого значения
+ */
+function extractBoolean(text, fieldName) {
+    const regex = new RegExp(fieldName + '\\s*:\\s*(true|false)', 's');
+    const match = text.match(regex);
+    return match ? match[1] === 'true' : null;
 }
 
 // Экспортируем функцию для использования в других файлах

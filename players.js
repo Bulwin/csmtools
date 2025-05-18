@@ -135,13 +135,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Скрываем информацию о попытке парсинга
                         
                         // Парсим данные игроков с помощью parsePlayersData
-                        const players = window.parsePlayersData(responseText);
+                        const result = window.parsePlayersData(responseText);
                         
-                        if (players && Array.isArray(players) && players.length > 0) {
+                        if (result && result.players && Array.isArray(result.players) && result.players.length > 0) {
+                            // Отображаем информацию о команде, если она есть
+                            if (result.teamInfo) {
+                                console.log('Информация о команде:', result.teamInfo);
+                                displayTeamInfo(result.teamInfo);
+                            } else {
+                                console.error('Информация о команде не найдена');
+                            }
                             // Скрываем информацию об успешном парсинге
                             
                             // Отображаем игроков
-                            displayPlayers(players);
+                            displayPlayers(result.players);
                             playersContainer.style.display = 'block';
                             return;
                         } else {
@@ -712,13 +719,118 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // Функция для отображения информации о команде
+    function displayTeamInfo(teamInfo) {
+        // Удаляем предыдущие панели информации о командах, если они есть
+        const existingPanels = document.querySelectorAll('.team-info-panel');
+        existingPanels.forEach(panel => panel.remove());
+        
+        // Создаем новый контейнер для информации о команде
+        const teamInfoPanel = document.createElement('div');
+        teamInfoPanel.className = 'team-info-panel';
+        teamInfoPanel.style.backgroundColor = '#2c3e50';
+        teamInfoPanel.style.color = 'white';
+        teamInfoPanel.style.padding = '20px';
+        teamInfoPanel.style.borderRadius = '8px';
+        teamInfoPanel.style.marginBottom = '20px';
+        teamInfoPanel.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        
+        // Создаем заголовок с названием команды
+        const teamName = document.createElement('h2');
+        teamName.style.fontSize = '28px';
+        teamName.style.margin = '0 0 20px 0';
+        teamName.style.textAlign = 'center';
+        teamName.style.textTransform = 'uppercase';
+        teamName.style.letterSpacing = '2px';
+        teamName.style.color = '#3498db';
+        teamName.style.textShadow = '1px 1px 2px rgba(0,0,0,0.3)';
+        teamName.textContent = teamInfo.name || 'Неизвестная команда';
+        
+        // Создаем контейнер для информации
+        const infoGrid = document.createElement('div');
+        infoGrid.style.display = 'grid';
+        infoGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(200px, 1fr))';
+        infoGrid.style.gap = '15px';
+        
+        // Добавляем информацию о команде
+        const teamInfoItems = [
+            { label: 'ID команды', value: teamInfo.id },
+            { label: 'Баланс', value: `${teamInfo.balance || 0} ₽PL` },
+            { label: 'Медиа-очки', value: teamInfo.mediaPoints || 0 },
+            { label: 'Очки славы', value: teamInfo.famePoints || 0 }
+        ];
+        
+        // Добавляем информацию о пользователе, если она есть
+        if (teamInfo.user) {
+            teamInfoItems.push(
+                { label: 'Имя пользователя', value: teamInfo.user.username || 'Н/Д' },
+                { label: 'Email', value: teamInfo.user.email || 'Н/Д' },
+                { label: 'Монеты', value: teamInfo.user.coins || 0 },
+                { label: 'Имя', value: (teamInfo.user.firstName || '') + ' ' + (teamInfo.user.lastName || '') },
+                { label: 'Дата рождения', value: teamInfo.user.birthday ? new Date(teamInfo.user.birthday).toLocaleDateString() : 'Н/Д' },
+                { label: 'VIP активен', value: teamInfo.user.vipActive ? 'Да' : 'Нет' },
+                { label: 'Штрафные очки', value: teamInfo.user.warningPoints || 0 }
+            );
+        }
+        
+        // Добавляем элементы в сетку
+        teamInfoItems.forEach(item => {
+            const infoItem = document.createElement('div');
+            infoItem.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            infoItem.style.padding = '15px';
+            infoItem.style.borderRadius = '4px';
+            infoItem.style.transition = 'all 0.3s ease';
+            infoItem.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+            
+            // Добавляем эффект при наведении
+            infoItem.onmouseover = function() {
+                this.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                this.style.transform = 'translateY(-2px)';
+            };
+            
+            infoItem.onmouseout = function() {
+                this.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                this.style.transform = 'translateY(0)';
+            };
+            
+            const label = document.createElement('div');
+            label.style.fontSize = '12px';
+            label.style.color = '#3498db';
+            label.style.marginBottom = '5px';
+            label.style.fontWeight = 'bold';
+            label.textContent = item.label;
+            
+            const value = document.createElement('div');
+            value.style.fontSize = '16px';
+            value.style.fontWeight = 'bold';
+            value.textContent = item.value;
+            
+            infoItem.appendChild(label);
+            infoItem.appendChild(value);
+            infoGrid.appendChild(infoItem);
+        });
+        
+        // Собираем все вместе
+        teamInfoPanel.appendChild(teamName);
+        teamInfoPanel.appendChild(infoGrid);
+        
+        // Вставляем панель информации о команде перед контейнером игроков
+        const playersContainer = document.getElementById('players-container');
+        playersContainer.parentNode.insertBefore(teamInfoPanel, playersContainer);
+    }
+    
     // Функция для отображения игроков
     function displayPlayers(players) {
-        // Сохраняем отладочную информацию
-        const debugInfo = playersList.innerHTML;
+        // Сохраняем информацию о команде, если она есть
+        const teamInfoContainer = playersList.querySelector('.team-info-container');
         
         // Очищаем список игроков перед отображением карточек
         playersList.innerHTML = '';
+        
+        // Восстанавливаем информацию о команде, если она была
+        if (teamInfoContainer) {
+            playersList.appendChild(teamInfoContainer);
+        }
         
         // Если игроков нет, показываем сообщение
         if (players.length === 0) {
