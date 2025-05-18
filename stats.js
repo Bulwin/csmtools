@@ -99,7 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Формируем URL для запроса через CORS-прокси
         const originalUrl = `https://www.cplmanager.com/cpl/api/teams/${teamId}/tactics/stats?side=${side}&map=${map}`;
-        const corsProxyUrl = `https://cors-anywhere.herokuapp.com/${originalUrl}`;
+        
+        // Используем более надежный CORS-прокси, который не требует временного разрешения
+        const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalUrl)}`;
         
         // Создаем невидимый iframe для загрузки данных
         const iframe = document.createElement('iframe');
