@@ -1053,18 +1053,43 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const skillBarContainer = document.createElement('div');
         skillBarContainer.className = 'skill-bar';
+        skillBarContainer.style.position = 'relative'; // Добавляем относительное позиционирование
         
+        // Создаем фон для всей шкалы (серый)
+        const skillBackground = document.createElement('div');
+        skillBackground.style.position = 'absolute';
+        skillBackground.style.top = '0';
+        skillBackground.style.left = '0';
+        skillBackground.style.width = '100%';
+        skillBackground.style.height = '100%';
+        skillBackground.style.backgroundColor = '#444';
+        skillBackground.style.borderRadius = '4px';
+        
+        // Создаем лимит скилла (желтый)
+        const skillLimit = document.createElement('div');
+        skillLimit.style.position = 'absolute';
+        skillLimit.style.top = '0';
+        skillLimit.style.left = '0';
+        skillLimit.style.width = `${limit}%`;
+        skillLimit.style.height = '100%';
+        skillLimit.style.backgroundColor = '#f39c12';
+        skillLimit.style.borderRadius = '4px';
+        
+        // Создаем текущее значение скилла (красный)
         const skillFill = document.createElement('div');
         skillFill.className = 'skill-fill';
-        skillFill.style.width = `${value}%`; // Всегда по 100-бальной шкале
+        skillFill.style.position = 'absolute';
+        skillFill.style.top = '0';
+        skillFill.style.left = '0';
+        skillFill.style.width = `${value}%`;
+        skillFill.style.height = '100%';
+        skillFill.style.backgroundColor = '#e74c3c';
+        skillFill.style.borderRadius = '4px';
+        skillFill.style.zIndex = '2'; // Поверх других элементов
         
-        if (progress > 0) {
-            const skillProgress = document.createElement('div');
-            skillProgress.className = 'skill-progress';
-            skillProgress.style.width = `${(progress / 100) * (limit - value)}%`;
-            skillBarContainer.appendChild(skillProgress);
-        }
-        
+        // Добавляем элементы в контейнер в правильном порядке (снизу вверх)
+        skillBarContainer.appendChild(skillBackground);
+        skillBarContainer.appendChild(skillLimit);
         skillBarContainer.appendChild(skillFill);
         
         skillBar.appendChild(skillName);
