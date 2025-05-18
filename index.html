@@ -134,6 +134,175 @@
             border-radius: 0 4px 4px 0;
         }
         
+        /* Стили для карточек игроков */
+        .players-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .player-card {
+            background-color: #1e1e1e;
+            color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .player-header {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            background-color: #2c2c2c;
+        }
+        
+        .player-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 15px;
+            color: white;
+        }
+        
+        .player-info {
+            flex: 1;
+        }
+        
+        .player-nick {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .player-country {
+            margin-right: 8px;
+        }
+        
+        .player-name {
+            font-size: 14px;
+            margin: 5px 0;
+            color: #aaa;
+        }
+        
+        .player-details {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .player-stats {
+            padding: 15px;
+        }
+        
+        .player-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .player-total-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .player-total-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .player-skill-bar {
+            margin-bottom: 8px;
+        }
+        
+        .skill-name {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+        
+        .skill-value {
+            font-weight: bold;
+        }
+        
+        .skill-limit {
+            color: #aaa;
+        }
+        
+        .skill-bar {
+            height: 8px;
+            background-color: #444;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .skill-fill {
+            height: 100%;
+            background-color: #e74c3c;
+            border-radius: 4px;
+        }
+        
+        .skill-progress {
+            height: 100%;
+            background-color: #f39c12;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+        
+        .player-footer {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            background-color: #2c2c2c;
+            border-top: 1px solid #444;
+        }
+        
+        .player-section {
+            flex: 1;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .section-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .section-progress {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .player-specials {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .special-tag {
+            background-color: #3498db;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
         /* Стили для табов */
         .tabs {
             display: flex;
@@ -175,6 +344,7 @@
         <button class="tab" onclick="openTab(event, 'stats-tab')">Статистика тактик</button>
         <button class="tab" onclick="openTab(event, 'converter-tab')">Скопировать из симуляции</button>
         <button class="tab" onclick="openTab(event, 'match-tab')">Проиграть матч</button>
+        <button class="tab" onclick="openTab(event, 'players-tab')">Просмотр игроков</button>
     </div>
     
     <div class="container">
@@ -322,6 +492,31 @@
             </div>
         </div>
         
+        <!-- Таб "Просмотр игроков" -->
+        <div id="players-tab" class="tab-content">
+            <div class="metadata-container">
+                <h2>Просмотр игроков</h2>
+                <p class="tab-description">Тулза для просмотра информации о игроках команды. Введите ID команды для загрузки данных.</p>
+                <div class="metadata-form">
+                    <div class="form-group">
+                        <label for="players-team-id">ID команды</label>
+                        <input type="number" id="players-team-id" placeholder="Например: 3984">
+                    </div>
+                    <div class="form-group">
+                        <button id="load-players" class="primary" style="margin-top: 24px;">Загрузить игроков</button>
+                    </div>
+                    <!-- Функционал загрузки файла удален -->
+                </div>
+            </div>
+            
+            <div id="players-container" style="margin-top: 20px; display: none;">
+                <h3>Игроки команды</h3>
+                <div id="players-list" class="players-list">
+                    <!-- Данные будут добавлены через JavaScript -->
+                </div>
+            </div>
+        </div>
+        
         <!-- Таб "Проиграть матч" -->
         <div id="match-tab" class="tab-content">
             <div class="metadata-container">
@@ -370,6 +565,56 @@
         }
     </script>
 
+    <!-- Временный скрипт для отладки -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Загруженные скрипты:');
+            const scripts = document.querySelectorAll('script');
+            scripts.forEach((script, index) => {
+                console.log(`${index + 1}. ${script.src || 'Встроенный скрипт'}`);
+            });
+            
+            // Проверяем, существуют ли элементы, к которым обращаются скрипты
+            console.log('Проверка элементов:');
+            
+            // Элементы для players-debug.js
+            console.log('players-team-id:', document.getElementById('players-team-id'));
+            console.log('load-players:', document.getElementById('load-players'));
+            console.log('players-container:', document.getElementById('players-container'));
+            console.log('players-list:', document.getElementById('players-list'));
+            
+            // Элементы для send-tactic.js
+            console.log('send-input-data:', document.getElementById('send-input-data'));
+            console.log('send-output-data:', document.getElementById('send-output-data'));
+            console.log('send-convert-btn:', document.getElementById('send-convert-btn'));
+            console.log('send-clear-btn:', document.getElementById('send-clear-btn'));
+            console.log('send-copy-btn:', document.getElementById('send-copy-btn'));
+            
+            // Элементы для find-tactic.js
+            console.log('tactic-id-search:', document.getElementById('tactic-id-search'));
+            console.log('tactic-id-container:', document.getElementById('tactic-id-container'));
+            console.log('json-data:', document.getElementById('json-data'));
+            console.log('find-map:', document.getElementById('find-map'));
+            console.log('find-side:', document.getElementById('find-side'));
+            console.log('find-tactic:', document.getElementById('find-tactic'));
+            console.log('clear-json:', document.getElementById('clear-json'));
+            console.log('tactic-result:', document.getElementById('tactic-result'));
+            console.log('tactic-data:', document.getElementById('tactic-data'));
+            console.log('copy-tactic:', document.getElementById('copy-tactic'));
+            
+            // Элементы для app.js
+            console.log('input-data:', document.getElementById('input-data'));
+            console.log('output-data:', document.getElementById('output-data'));
+            console.log('convert-to-full-ui:', document.getElementById('convert-to-full-ui'));
+            console.log('clear-input:', document.getElementById('clear-input'));
+            console.log('copy-output:', document.getElementById('copy-output'));
+            console.log('team-id:', document.getElementById('team-id'));
+            console.log('tactic-name:', document.getElementById('tactic-name'));
+            console.log('map:', document.getElementById('map'));
+            console.log('side:', document.getElementById('side'));
+        });
+    </script>
+    
     <script src="Converter.js"></script>
     <script src="app.js"></script>
     <script src="stats.js"></script>
@@ -377,5 +622,7 @@
     <script src="find-tactic.js"></script>
     <script src="converter-new.js"></script>
     <script src="send-tactic.js"></script>
+    <script src="players-data.js"></script>
+    <script src="players.js"></script>
 </body>
 </html>
