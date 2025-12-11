@@ -351,42 +351,59 @@
         <!-- Таб "Отправить страту" -->
         <div id="send-tactic-tab" class="tab-content active">
             <div class="metadata-container">
-                <h2>Отправить страту</h2>
-                <p class="tab-description">Тулза для копирования и отправки своих тактик. Откройте любую тактику и скопируйте ответ сервера в консоли браузера.</p>
-                <div class="metadata-form" id="send-metadata-container" style="display: none;">
+                <h2>Копирование тактики с подменой ID</h2>
+                <p class="tab-description">Инструмент для копирования чужой тактики со своими ID. Вставьте свою пустую тактику в 1 окно (для получения ID), чужую тактику во 2 окно. Результат - тактика с вашими ID и чужим содержимым для подмены запроса в браузере.</p>
+                
+                <!-- Информация об ID -->
+                <div class="metadata-form" id="send-metadata-container" style="display: none; margin-top: 15px;">
                     <div class="form-group">
-                        <label for="send-team-id">ID команды</label>
-                        <input type="number" id="send-team-id" readonly>
+                        <label>ID тактики</label>
+                        <input type="text" id="send-tactic-id" readonly>
                     </div>
                     <div class="form-group">
-                        <label for="send-tactic-name">Название тактики</label>
+                        <label>Название</label>
                         <input type="text" id="send-tactic-name" readonly>
                     </div>
                     <div class="form-group">
-                        <label for="send-map">Карта</label>
-                        <input type="text" id="send-map" readonly>
+                        <label>ID команды</label>
+                        <input type="text" id="send-team-id" readonly>
                     </div>
                     <div class="form-group">
-                        <label for="send-side">Сторона</label>
-                        <input type="text" id="send-side" readonly>
+                        <label>ID автора</label>
+                        <input type="text" id="send-author-id" readonly>
                     </div>
                 </div>
             </div>
             
-            <div class="conversion-container">
-                <div class="conversion-box">
-                    <h2>Исходный JSON</h2>
-                    <textarea id="send-input-data" placeholder="Вставьте JSON с блоком data.tactic..."></textarea>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <!-- Окно 1: Пустая тактика пользователя -->
+                <div class="conversion-box" style="flex: 1; min-width: 300px;">
+                    <h2>1. Ваша пустая тактика</h2>
+                    <p style="color: #7f8c8d; font-size: 0.85rem; margin: 5px 0 10px;">Вставьте ответ сервера с вашей тактикой (откуда берём ID)</p>
+                    <textarea id="send-user-tactic" placeholder="Вставьте JSON с вашей тактикой...&#10;&#10;Пример:&#10;{&#10;  &quot;success&quot;: true,&#10;  &quot;updatedTactic&quot;: {&#10;    &quot;id&quot;: 241482,&#10;    &quot;name&quot;: &quot;accurate B #1&quot;,&#10;    &quot;teamId&quot;: 3782,&#10;    &quot;authorId&quot;: 181,&#10;    ...&#10;  }&#10;}"></textarea>
                     <div class="buttons">
-                        <button id="send-convert-btn" class="primary">Конвертировать</button>
-                        <button id="send-clear-btn" class="secondary">Очистить</button>
+                        <button id="send-parse-user-btn" class="secondary">Распарсить ID</button>
+                        <button id="send-clear-user-btn" class="secondary">Очистить</button>
                     </div>
                 </div>
                 
-                <div class="conversion-box">
-                    <h2>Результат конвертации</h2>
-                    <textarea id="send-output-data" readonly></textarea>
+                <!-- Окно 2: Тактика для копирования -->
+                <div class="conversion-box" style="flex: 1; min-width: 300px;">
+                    <h2>2. Тактика для копирования</h2>
+                    <p style="color: #7f8c8d; font-size: 0.85rem; margin: 5px 0 10px;">Вставьте чужую тактику (откуда берём содержимое)</p>
+                    <textarea id="send-source-tactic" placeholder="Вставьте JSON с тактикой для копирования..."></textarea>
                     <div class="buttons">
+                        <button id="send-clear-source-btn" class="secondary">Очистить</button>
+                    </div>
+                </div>
+                
+                <!-- Окно 3: Результат -->
+                <div class="conversion-box" style="flex: 1; min-width: 300px;">
+                    <h2>3. Результат</h2>
+                    <p style="color: #7f8c8d; font-size: 0.85rem; margin: 5px 0 10px;">Готовая тактика для подмены запроса</p>
+                    <textarea id="send-output-data" readonly placeholder="Здесь появится результат..."></textarea>
+                    <div class="buttons">
+                        <button id="send-merge-btn" class="primary">Объединить</button>
                         <button id="send-copy-btn">Копировать</button>
                     </div>
                 </div>

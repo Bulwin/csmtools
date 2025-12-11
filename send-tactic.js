@@ -1,56 +1,135 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM элементы
-    const sendInputData = document.getElementById('send-input-data');
+    // DOM элементы - 3 окна
+    const sendUserTactic = document.getElementById('send-user-tactic');
+    const sendSourceTactic = document.getElementById('send-source-tactic');
     const sendOutputData = document.getElementById('send-output-data');
-    const sendConvertBtn = document.getElementById('send-convert-btn');
-    const sendClearBtn = document.getElementById('send-clear-btn');
+    
+    // Кнопки
+    const sendParseUserBtn = document.getElementById('send-parse-user-btn');
+    const sendClearUserBtn = document.getElementById('send-clear-user-btn');
+    const sendClearSourceBtn = document.getElementById('send-clear-source-btn');
+    const sendMergeBtn = document.getElementById('send-merge-btn');
     const sendCopyBtn = document.getElementById('send-copy-btn');
     
     // Метаданные
-    const sendTeamIdInput = document.getElementById('send-team-id');
+    const sendTacticIdInput = document.getElementById('send-tactic-id');
     const sendTacticNameInput = document.getElementById('send-tactic-name');
-    const sendMapInput = document.getElementById('send-map');
-    const sendSideInput = document.getElementById('send-side');
+    const sendTeamIdInput = document.getElementById('send-team-id');
+    const sendAuthorIdInput = document.getElementById('send-author-id');
     const sendMetadataContainer = document.getElementById('send-metadata-container');
     
-    // Обработчик кнопки "Конвертировать"
-    sendConvertBtn.addEventListener('click', () => {
-        const input = sendInputData.value.trim();
-        if (!input) return;
+    // Сохраненные данные пользователя
+    let userData = null;
+    
+    // Автоматический парсинг при вставке в окно 1
+    sendUserTactic.addEventListener('input', () => {
+        const input = sendUserTactic.value.trim();
+        if (!input) {
+            userData = null;
+            sendMetadataContainer.style.display = 'none';
+            return;
+        }
         
         try {
-            // Извлекаем данные из JSON
-            const tacticData = extractTacticFromJSON(input);
+            userData = extractUserData(input);
             
-            if (!tacticData) {
-                alert('Не удалось найти блок data.tactic в JSON. Проверьте ввод.');
+            if (userData) {
+                displayUserMetadata(userData);
+            } else {
+                sendMetadataContainer.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Ошибка при автоматическом парсинге:', error);
+        }
+    });
+    
+    // Обработчик кнопки "Распарсить ID" (оставляем для ручного парсинга)
+    sendParseUserBtn.addEventListener('click', () => {
+        const input = sendUserTactic.value.trim();
+        if (!input) {
+            alert('Вставьте JSON с вашей тактикой');
+            return;
+        }
+        
+        try {
+            userData = extractUserData(input);
+            
+            if (!userData) {
+                alert('Не удалось найти данные тактики. Проверьте JSON.');
                 return;
             }
             
             // Отображаем метаданные
-            displayMetadata(tacticData);
-            
-            // Конвертируем данные в формат full-ui
-            const formattedData = formatToFullUI(tacticData);
-            
-            // Отображаем результат
-            sendOutputData.value = JSON.stringify(formattedData, null, 2);
+            displayUserMetadata(userData);
             
         } catch (error) {
-            console.error('Ошибка при конвертации:', error);
-            alert('Ошибка при конвертации: ' + error.message);
+            console.error('Ошибка при парсинге:', error);
+            alert('Ошибка при парсинге: ' + error.message);
         }
     });
     
-    // Обработчик кнопки "Очистить"
-    sendClearBtn.addEventListener('click', () => {
-        sendInputData.value = '';
-        sendOutputData.value = '';
+    // Обработчик кнопки "Объединить"
+    sendMergeBtn.addEventListener('click', () => {
+        if (!userData) {
+            alert('Сначала распарсите вашу тактику (окно 1)');
+            return;
+        }
+        
+        const sourceInput = sendSourceTactic.value.trim();
+        if (!sourceInput) {
+            alert('Вставьте тактику для копирования (окно 2)');
+            return;
+        }
+        
+        try {
+            const sourceData = extractTacticData(sourceInput);
+            
+            if (!sourceData) {
+                alert('Не удалось найти данные в тактике для копирования.');
+                return;
+            }
+            
+            // Объединяем данные
+            const mergedTactic = mergeTactics(userData, sourceData);
+            
+            // Верификация - проверяем, что все 4 параметра совпадают
+            const verification = verifyMergedTactic(userData, mergedTactic);
+            
+            // Отображаем результат
+            sendOutputData.value = JSON.stringify(mergedTactic, null, 2);
+            
+            // Показываем результат верификации
+            if (verification.success) {
+                showVerificationResult(verification);
+            } else {
+                alert('⚠️ Ошибка верификации: ' + verification.errors.join(', '));
+            }
+            
+        } catch (error) {
+            console.error('Ошибка при объединении:', error);
+            alert('Ошибка при объединении: ' + error.message);
+        }
+    });
+    
+    // Обработчик кнопки "Очистить" для окна 1
+    sendClearUserBtn.addEventListener('click', () => {
+        sendUserTactic.value = '';
+        userData = null;
         sendMetadataContainer.style.display = 'none';
+    });
+    
+    // Обработчик кнопки "Очистить" для окна 2
+    sendClearSourceBtn.addEventListener('click', () => {
+        sendSourceTactic.value = '';
     });
     
     // Обработчик кнопки "Копировать"
     sendCopyBtn.addEventListener('click', () => {
+        if (!sendOutputData.value) {
+            alert('Нечего копировать');
+            return;
+        }
+        
         sendOutputData.select();
         document.execCommand('copy');
         
@@ -62,246 +141,299 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1500);
     });
     
-    // Функция для извлечения данных из блока data.tactic
-    function extractTacticFromJSON(jsonText) {
+    // Функция для извлечения данных пользователя (ID, name, teamId, authorId)
+    function extractUserData(jsonText) {
         try {
-            // Ищем ID команды в формате a.id = NUMBER
-            let teamId = 3782; // Значение по умолчанию
-            const teamIdMatch = jsonText.match(/a\.id\s*=\s*(\d+)/);
-            if (teamIdMatch && teamIdMatch[1]) {
-                teamId = parseInt(teamIdMatch[1]);
-                console.log(`Найден ID команды: ${teamId}`);
+            // Пытаемся парсить как JSON
+            let data;
+            try {
+                data = JSON.parse(jsonText);
+            } catch (e) {
+                // Если не получилось, ищем объект вручную
+                console.log('JSON парсинг не удался, пробуем извлечь вручную');
+                return extractUserDataManually(jsonText);
             }
             
-            // Ищем блок data.tactic
-            if ((jsonText.includes('"type": "data"') || jsonText.includes("type: 'data'") || jsonText.includes("type: \"data\"")) && 
-                (jsonText.includes('"data":') || jsonText.includes('data:')) && 
-                (jsonText.includes('"tactic":') || jsonText.includes('tactic:'))) {
-                console.log('Найден блок data.tactic');
-                
-                // Ищем начало блока tactic внутри data
-                let dataIndex = jsonText.indexOf('"data":');
-                if (dataIndex === -1) dataIndex = jsonText.indexOf('data:');
-                
-                let tacticStart = jsonText.indexOf('"tactic":', dataIndex);
-                if (tacticStart === -1) tacticStart = jsonText.indexOf('tactic:', dataIndex);
-                if (tacticStart !== -1) {
-                    console.log('Найдено начало блока tactic внутри data');
-                    
-                    // Ищем открывающую фигурную скобку
-                    const objectStart = jsonText.indexOf('{', tacticStart);
-                    if (objectStart !== -1) {
-                        // Ищем закрывающую фигурную скобку с учетом вложенности
-                        let bracketCount = 1;
-                        let objectEnd = objectStart + 1;
-                        
-                        while (bracketCount > 0 && objectEnd < jsonText.length) {
-                            if (jsonText[objectEnd] === '{') {
-                                bracketCount++;
-                            } else if (jsonText[objectEnd] === '}') {
-                                bracketCount--;
-                            }
-                            objectEnd++;
-                        }
-                        
-                        if (bracketCount === 0) {
-                            // Извлекаем блок tactic
-                            const tacticBlock = jsonText.substring(objectStart, objectEnd);
-                            console.log('Извлечен блок tactic из data');
-                            
-                            // Извлекаем данные из блока tactic
-                            const idMatch = /id\s*:\s*(\d+)/.exec(tacticBlock);
-                            const nameMatch = /name\s*:\s*"([^"]*)"/.exec(tacticBlock);
-                            const sideMatch = /side\s*:\s*(\d+)/.exec(tacticBlock);
-                            const teamIdMatch = /teamId\s*:\s*(\d+)/.exec(tacticBlock);
-                            const mapMatch = /map\s*:\s*"([^"]*)"/.exec(tacticBlock);
-                            const isPistolMatch = /isPistol\s*:\s*(true|false)/.exec(tacticBlock);
-                            const isEcoMatch = /isEco\s*:\s*(true|false)/.exec(tacticBlock);
-                            const isStandardMatch = /isStandard\s*:\s*(true|false)/.exec(tacticBlock);
-                            const useLeagueMatch = /useLeague\s*:\s*(true|false)/.exec(tacticBlock);
-                            const useLadderMatch = /useLadder\s*:\s*(true|false)/.exec(tacticBlock);
-                            const useTournamentMatch = /useTournament\s*:\s*(true|false)/.exec(tacticBlock);
-                            const useScrimMatch = /useScrim\s*:\s*(true|false)/.exec(tacticBlock);
-                            
-                            // Создаем объект с данными тактики
-                            const tacticData = {
-                                id: idMatch ? parseInt(idMatch[1]) : null,
-                                name: nameMatch ? nameMatch[1] : 'Неизвестная тактика',
-                                side: sideMatch ? parseInt(sideMatch[1]) : 0,
-                                teamId: teamIdMatch ? parseInt(teamIdMatch[1]) : teamId,
-                                map: mapMatch ? mapMatch[1] : 'train',
-                                waypoints: extractWaypointsFromText(tacticBlock),
-                                postPlantWaypoints: extractPostPlantWaypointsFromText(tacticBlock),
-                                isPistol: isPistolMatch ? isPistolMatch[1] === 'true' : true,
-                                isEco: isEcoMatch ? isEcoMatch[1] === 'true' : true,
-                                isStandard: isStandardMatch ? isStandardMatch[1] === 'true' : true,
-                                useLeague: useLeagueMatch ? useLeagueMatch[1] === 'true' : true,
-                                useLadder: useLadderMatch ? useLadderMatch[1] === 'true' : true,
-                                useTournament: useTournamentMatch ? useTournamentMatch[1] === 'true' : true,
-                                useScrim: useScrimMatch ? useScrimMatch[1] === 'true' : true
-                            };
-                            
-                            return tacticData;
-                        }
-                    }
-                }
+            // Ищем тактику в разных форматах ответа
+            let tactic = null;
+            
+            if (data.updatedTactic) {
+                tactic = data.updatedTactic;
+            } else if (data.tactic) {
+                tactic = data.tactic;
+            } else if (data.data && data.data.tactic) {
+                tactic = data.data.tactic;
+            } else if (data.id && data.teamId) {
+                // Это уже сама тактика
+                tactic = data;
             }
             
+            if (!tactic) {
+                return null;
+            }
+            
+            return {
+                id: tactic.id,
+                name: tactic.name,
+                teamId: tactic.teamId,
+                authorId: tactic.authorId,
+                map: tactic.map,
+                side: tactic.side
+            };
+            
+        } catch (error) {
+            console.error('Ошибка при извлечении данных пользователя:', error);
             return null;
-        } catch (error) {
-            console.error('Ошибка при извлечении данных из JSON:', error);
-            throw new Error('Не удалось извлечь данные из JSON: ' + error.message);
         }
     }
     
-    // Функция для извлечения waypoints из текста
-    function extractWaypointsFromText(text) {
+    // Функция для ручного извлечения данных пользователя
+    function extractUserDataManually(text) {
+        const idMatch = /"id"\s*:\s*(\d+)/.exec(text);
+        const nameMatch = /"name"\s*:\s*"([^"]*)"/.exec(text);
+        const teamIdMatch = /"teamId"\s*:\s*(\d+)/.exec(text);
+        const authorIdMatch = /"authorId"\s*:\s*(\d+)/.exec(text);
+        const mapMatch = /"map"\s*:\s*"([^"]*)"/.exec(text);
+        const sideMatch = /"side"\s*:\s*(\d+)/.exec(text);
+        
+        if (!idMatch || !teamIdMatch) {
+            return null;
+        }
+        
+        return {
+            id: parseInt(idMatch[1]),
+            name: nameMatch ? nameMatch[1] : 'Unknown',
+            teamId: parseInt(teamIdMatch[1]),
+            authorId: authorIdMatch ? parseInt(authorIdMatch[1]) : null,
+            map: mapMatch ? mapMatch[1] : 'train',
+            side: sideMatch ? parseInt(sideMatch[1]) : 0
+        };
+    }
+    
+    // Функция для извлечения данных тактики для копирования
+    function extractTacticData(jsonText) {
         try {
-            // Ищем начало массива waypoints
-            const waypointsStart = text.indexOf('[', text.indexOf('waypoints:'));
-            if (waypointsStart !== -1) {
-                // Ищем конец массива waypoints с учетом вложенности
-                let bracketCount = 1;
-                let waypointsEnd = waypointsStart + 1;
-                
-                while (bracketCount > 0 && waypointsEnd < text.length) {
-                    if (text[waypointsEnd] === '[') {
-                        bracketCount++;
-                    } else if (text[waypointsEnd] === ']') {
-                        bracketCount--;
-                    }
-                    waypointsEnd++;
-                }
-                
-                if (bracketCount === 0) {
-                    // Извлекаем массив waypoints
-                    const waypointsText = text.substring(waypointsStart, waypointsEnd);
-                    console.log('Извлечен массив waypoints');
-                    
-                    // Пробуем парсить как JSON
-                    try {
-                        return JSON.parse(waypointsText);
-                    } catch (jsonError) {
-                        console.error('Ошибка при парсинге waypoints как JSON:', jsonError);
-                        
-                        // Если не удалось парсить как JSON, пробуем выполнить как код JavaScript
-                        try {
-                            // Создаем временный объект для хранения результата
-                            let result = [];
-                            
-                            // Выполняем код в контексте временного объекта
-                            const code = `result = ${waypointsText}`;
-                            eval(code);
-                            
-                            return result;
-                        } catch (evalError) {
-                            console.error('Ошибка при выполнении waypoints как код JavaScript:', evalError);
-                            return [];
-                        }
-                    }
-                }
+            // Пытаемся парсить как JSON
+            let data;
+            try {
+                data = JSON.parse(jsonText);
+            } catch (e) {
+                console.log('JSON парсинг не удался, пробуем извлечь вручную');
+                return extractTacticDataManually(jsonText);
             }
             
-            return []; // Возвращаем пустой массив, если не удалось извлечь waypoints
+            // Ищем тактику в разных форматах ответа
+            let tactic = null;
+            
+            if (data.updatedTactic) {
+                tactic = data.updatedTactic;
+            } else if (data.tactic) {
+                tactic = data.tactic;
+            } else if (data.data && data.data.tactic) {
+                tactic = data.data.tactic;
+            } else if (data.matchData && data.matchData.tactic) {
+                tactic = data.matchData.tactic;
+            } else if (data.waypoints) {
+                // Это уже сама тактика
+                tactic = data;
+            }
+            
+            if (!tactic) {
+                return null;
+            }
+            
+            return {
+                waypoints: tactic.waypoints || [],
+                postPlantWaypoints: tactic.postPlantWaypoints || [],
+                bombCarrier: tactic.bombCarrier !== undefined ? tactic.bombCarrier : 1,
+                plantTime: tactic.plantTime !== undefined ? tactic.plantTime : 25,
+                map: tactic.map,
+                side: tactic.side,
+                isPistol: tactic.isPistol !== undefined ? tactic.isPistol : true,
+                isEco: tactic.isEco !== undefined ? tactic.isEco : true,
+                isStandard: tactic.isStandard !== undefined ? tactic.isStandard : true,
+                useLeague: tactic.useLeague !== undefined ? tactic.useLeague : true,
+                useLadder: tactic.useLadder !== undefined ? tactic.useLadder : true,
+                useTournament: tactic.useTournament !== undefined ? tactic.useTournament : true,
+                useOpen: tactic.useOpen !== undefined ? tactic.useOpen : true,
+                useEos: tactic.useEos !== undefined ? tactic.useEos : true,
+                useCup: tactic.useCup !== undefined ? tactic.useCup : true,
+                useScrim: tactic.useScrim !== undefined ? tactic.useScrim : true,
+                useCustom: tactic.useCustom !== undefined ? tactic.useCustom : true
+            };
+            
         } catch (error) {
-            console.error('Ошибка при извлечении waypoints из текста:', error);
+            console.error('Ошибка при извлечении данных тактики:', error);
+            return null;
+        }
+    }
+    
+    // Функция для ручного извлечения данных тактики
+    function extractTacticDataManually(text) {
+        // Извлекаем waypoints
+        const waypoints = extractArrayFromText(text, 'waypoints');
+        const postPlantWaypoints = extractArrayFromText(text, 'postPlantWaypoints');
+        
+        // Извлекаем остальные поля
+        const bombCarrierMatch = /"bombCarrier"\s*:\s*(\d+)/.exec(text);
+        const plantTimeMatch = /"plantTime"\s*:\s*(\d+)/.exec(text);
+        const mapMatch = /"map"\s*:\s*"([^"]*)"/.exec(text);
+        const sideMatch = /"side"\s*:\s*(\d+)/.exec(text);
+        
+        const isPistolMatch = /"isPistol"\s*:\s*(true|false)/.exec(text);
+        const isEcoMatch = /"isEco"\s*:\s*(true|false)/.exec(text);
+        const isStandardMatch = /"isStandard"\s*:\s*(true|false)/.exec(text);
+        const useLeagueMatch = /"useLeague"\s*:\s*(true|false)/.exec(text);
+        const useLadderMatch = /"useLadder"\s*:\s*(true|false)/.exec(text);
+        const useTournamentMatch = /"useTournament"\s*:\s*(true|false)/.exec(text);
+        const useOpenMatch = /"useOpen"\s*:\s*(true|false)/.exec(text);
+        const useEosMatch = /"useEos"\s*:\s*(true|false)/.exec(text);
+        const useCupMatch = /"useCup"\s*:\s*(true|false)/.exec(text);
+        const useScrimMatch = /"useScrim"\s*:\s*(true|false)/.exec(text);
+        const useCustomMatch = /"useCustom"\s*:\s*(true|false)/.exec(text);
+        
+        return {
+            waypoints: waypoints,
+            postPlantWaypoints: postPlantWaypoints,
+            bombCarrier: bombCarrierMatch ? parseInt(bombCarrierMatch[1]) : 1,
+            plantTime: plantTimeMatch ? parseInt(plantTimeMatch[1]) : 25,
+            map: mapMatch ? mapMatch[1] : 'train',
+            side: sideMatch ? parseInt(sideMatch[1]) : 0,
+            isPistol: isPistolMatch ? isPistolMatch[1] === 'true' : true,
+            isEco: isEcoMatch ? isEcoMatch[1] === 'true' : true,
+            isStandard: isStandardMatch ? isStandardMatch[1] === 'true' : true,
+            useLeague: useLeagueMatch ? useLeagueMatch[1] === 'true' : true,
+            useLadder: useLadderMatch ? useLadderMatch[1] === 'true' : true,
+            useTournament: useTournamentMatch ? useTournamentMatch[1] === 'true' : true,
+            useOpen: useOpenMatch ? useOpenMatch[1] === 'true' : true,
+            useEos: useEosMatch ? useEosMatch[1] === 'true' : true,
+            useCup: useCupMatch ? useCupMatch[1] === 'true' : true,
+            useScrim: useScrimMatch ? useScrimMatch[1] === 'true' : true,
+            useCustom: useCustomMatch ? useCustomMatch[1] === 'true' : true
+        };
+    }
+    
+    // Функция для извлечения массива из текста
+    function extractArrayFromText(text, fieldName) {
+        try {
+            const regex = new RegExp(`"${fieldName}"\\s*:\\s*\\[`);
+            const match = regex.exec(text);
+            
+            if (!match) {
+                return [];
+            }
+            
+            const startIndex = match.index + match[0].length - 1;
+            let bracketCount = 1;
+            let endIndex = startIndex + 1;
+            
+            while (bracketCount > 0 && endIndex < text.length) {
+                if (text[endIndex] === '[') {
+                    bracketCount++;
+                } else if (text[endIndex] === ']') {
+                    bracketCount--;
+                }
+                endIndex++;
+            }
+            
+            if (bracketCount === 0) {
+                const arrayText = text.substring(startIndex, endIndex);
+                return JSON.parse(arrayText);
+            }
+            
+            return [];
+        } catch (error) {
+            console.error(`Ошибка при извлечении ${fieldName}:`, error);
             return [];
         }
     }
     
-    // Функция для извлечения postPlantWaypoints из текста
-    function extractPostPlantWaypointsFromText(text) {
-        try {
-            // Ищем начало массива postPlantWaypoints
-            const postPlantWaypointsStart = text.indexOf('[', text.indexOf('postPlantWaypoints:'));
-            if (postPlantWaypointsStart !== -1) {
-                // Ищем конец массива postPlantWaypoints с учетом вложенности
-                let bracketCount = 1;
-                let postPlantWaypointsEnd = postPlantWaypointsStart + 1;
-                
-                while (bracketCount > 0 && postPlantWaypointsEnd < text.length) {
-                    if (text[postPlantWaypointsEnd] === '[') {
-                        bracketCount++;
-                    } else if (text[postPlantWaypointsEnd] === ']') {
-                        bracketCount--;
-                    }
-                    postPlantWaypointsEnd++;
-                }
-                
-                if (bracketCount === 0) {
-                    // Извлекаем массив postPlantWaypoints
-                    const postPlantWaypointsText = text.substring(postPlantWaypointsStart, postPlantWaypointsEnd);
-                    console.log('Извлечен массив postPlantWaypoints');
-                    
-                    // Пробуем парсить как JSON
-                    try {
-                        return JSON.parse(postPlantWaypointsText);
-                    } catch (jsonError) {
-                        console.error('Ошибка при парсинге postPlantWaypoints как JSON:', jsonError);
-                        
-                        // Если не удалось парсить как JSON, пробуем выполнить как код JavaScript
-                        try {
-                            // Создаем временный объект для хранения результата
-                            let result = [];
-                            
-                            // Выполняем код в контексте временного объекта
-                            const code = `result = ${postPlantWaypointsText}`;
-                            eval(code);
-                            
-                            return result;
-                        } catch (evalError) {
-                            console.error('Ошибка при выполнении postPlantWaypoints как код JavaScript:', evalError);
-                            return [];
-                        }
-                    }
-                }
-            }
-            
-            return []; // Возвращаем пустой массив, если не удалось извлечь postPlantWaypoints
-        } catch (error) {
-            console.error('Ошибка при извлечении postPlantWaypoints из текста:', error);
-            return [];
-        }
-    }
-    
-    // Функция для отображения метаданных
-    function displayMetadata(tacticData) {
-        sendTeamIdInput.value = tacticData.teamId;
-        sendTacticNameInput.value = tacticData.name;
-        sendMapInput.value = tacticData.map;
-        sendSideInput.value = tacticData.side === 1 ? 'CT (1)' : 'T (0)';
+    // Функция для отображения метаданных пользователя
+    function displayUserMetadata(data) {
+        sendTacticIdInput.value = data.id;
+        sendTacticNameInput.value = data.name;
+        sendTeamIdInput.value = data.teamId;
+        sendAuthorIdInput.value = data.authorId || 'N/A';
         sendMetadataContainer.style.display = 'grid';
     }
     
-    // Функция для форматирования данных в формат full-ui
-    function formatToFullUI(tacticData) {
-        // Создаем массив типов тактик
-        const tacticTypes = [];
-        if (tacticData.isPistol) tacticTypes.push("pistol");
-        if (tacticData.isStandard) tacticTypes.push("standard");
-        if (tacticData.isEco) tacticTypes.push("eco");
+    // Функция верификации результата
+    function verifyMergedTactic(userData, mergedTactic) {
+        const errors = [];
+        const tactic = mergedTactic.updatedTactic;
         
-        // Создаем массив типов матчей
-        const matchTypes = [];
-        if (tacticData.useLeague) matchTypes.push("league");
-        if (tacticData.useScrim) matchTypes.push("scrim");
-        if (tacticData.useLadder) matchTypes.push("ladder");
-        if (tacticData.useTournament) matchTypes.push("tournament");
-        
-        // Создаем объект в формате full-ui
-        return {
-            team_id: tacticData.teamId,
-            name: tacticData.name,
-            map: tacticData.map,
-            side: tacticData.side,
-            selectedTacticTypes: tacticTypes.length > 0 ? tacticTypes : ["pistol", "standard", "eco"],
-            selectedMatchTypes: matchTypes.length > 0 ? matchTypes : ["league", "scrim", "ladder", "tournament"],
-            loadouts: [],
-            bomb_carrier: 1,
-            plantTime: 25,
-            waypoints: tacticData.waypoints,
-            postPlantWaypoints: tacticData.postPlantWaypoints,
-            isDraft: true
+        // Проверяем все 4 параметра
+        const checks = {
+            id: { expected: userData.id, actual: tactic.id },
+            name: { expected: userData.name, actual: tactic.name },
+            teamId: { expected: userData.teamId, actual: tactic.teamId },
+            authorId: { expected: userData.authorId, actual: tactic.authorId }
         };
+        
+        for (const [key, value] of Object.entries(checks)) {
+            if (value.expected !== value.actual) {
+                errors.push(`${key}: ожидалось ${value.expected}, получено ${value.actual}`);
+            }
+        }
+        
+        return {
+            success: errors.length === 0,
+            errors: errors,
+            checks: checks
+        };
+    }
+    
+    // Функция для отображения результата верификации
+    function showVerificationResult(verification) {
+        const checks = verification.checks;
+        const message = `✅ Верификация пройдена!\n\n` +
+            `ID тактики: ${checks.id.actual} ✓\n` +
+            `Название: ${checks.name.actual} ✓\n` +
+            `ID команды: ${checks.teamId.actual} ✓\n` +
+            `ID автора: ${checks.authorId.actual} ✓\n\n` +
+            `Все 4 параметра успешно перенесены из вашей тактики.`;
+        
+        alert(message);
+    }
+    
+    // Функция для объединения тактик
+    function mergeTactics(userData, sourceData) {
+        // Создаем результирующий объект - берем данные из sourceData, но ID из userData
+        const result = {
+            success: true,
+            updatedTactic: {
+                id: userData.id,
+                name: userData.name,
+                side: sourceData.side !== undefined ? sourceData.side : userData.side,
+                teamId: userData.teamId,
+                tacticGroupId: null,
+                waypoints: sourceData.waypoints,
+                postPlantWaypoints: sourceData.postPlantWaypoints,
+                bombCarrier: sourceData.bombCarrier,
+                type: null,
+                creationDate: new Date().toISOString(),
+                map: sourceData.map || userData.map,
+                isPistol: sourceData.isPistol,
+                isEco: sourceData.isEco,
+                isStandard: sourceData.isStandard,
+                useLeague: sourceData.useLeague,
+                useLadder: sourceData.useLadder,
+                useTournament: sourceData.useTournament,
+                useOpen: sourceData.useOpen,
+                useEos: sourceData.useEos,
+                useCup: sourceData.useCup,
+                useScrim: sourceData.useScrim,
+                useCustom: sourceData.useCustom,
+                status: "draft",
+                order: null,
+                plantTime: sourceData.plantTime,
+                authorId: userData.authorId,
+                afterplantAId: null,
+                afterplantBId: null
+            },
+            name: false
+        };
+        
+        return result;
     }
 });
