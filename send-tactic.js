@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 authorId: tactic.authorId,
                 map: tactic.map,
                 side: tactic.side,
-                baseWaypointsSig: tactic.baseWaypointsSig || null
+                baseWaypointsSig: tactic.baseWaypointsSig || tactic.waypointsSig || null
             };
             
         } catch (error) {
@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mapMatch = /"map"\s*:\s*"([^"]*)"/.exec(text);
         const sideMatch = /"side"\s*:\s*(\d+)/.exec(text);
         const baseWaypointsSigMatch = /"baseWaypointsSig"\s*:\s*"([^"]*)"/.exec(text);
+        const waypointsSigMatch = /"waypointsSig"\s*:\s*"([^"]*)"/.exec(text);
         
         if (!idMatch || !teamIdMatch) {
             return null;
@@ -209,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             authorId: authorIdMatch ? parseInt(authorIdMatch[1]) : null,
             map: mapMatch ? mapMatch[1] : 'train',
             side: sideMatch ? parseInt(sideMatch[1]) : 0,
-            baseWaypointsSig: baseWaypointsSigMatch ? baseWaypointsSigMatch[1] : null
+            baseWaypointsSig: baseWaypointsSigMatch ? baseWaypointsSigMatch[1] : (waypointsSigMatch ? waypointsSigMatch[1] : null)
         };
     }
     
