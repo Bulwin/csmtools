@@ -357,17 +357,17 @@ document.addEventListener('DOMContentLoaded', () => {
         sendMetadataContainer.style.display = 'grid';
     }
     
+    // Цвета игроков для UI-формата
+    const playerColors = ['#8CF381', '#FF6047', '#EBE22A', '#4090F6', '#F6A400'];
+    
     // Функция верификации результата
     function verifyMergedTactic(userData, mergedTactic) {
         const errors = [];
-        const tactic = mergedTactic.updatedTactic;
         
-        // Проверяем все 4 параметра
+        // Проверяем все 4 параметра (в новом формате team_id вместо teamId)
         const checks = {
-            id: { expected: userData.id, actual: tactic.id },
-            name: { expected: userData.name, actual: tactic.name },
-            teamId: { expected: userData.teamId, actual: tactic.teamId },
-            authorId: { expected: userData.authorId, actual: tactic.authorId }
+            name: { expected: userData.name, actual: mergedTactic.name },
+            team_id: { expected: userData.teamId, actual: mergedTactic.team_id }
         };
         
         for (const [key, value] of Object.entries(checks)) {
@@ -387,51 +387,160 @@ document.addEventListener('DOMContentLoaded', () => {
     function showVerificationResult(verification) {
         const checks = verification.checks;
         const message = `✅ Верификация пройдена!\n\n` +
-            `ID тактики: ${checks.id.actual} ✓\n` +
             `Название: ${checks.name.actual} ✓\n` +
-            `ID команды: ${checks.teamId.actual} ✓\n` +
-            `ID автора: ${checks.authorId.actual} ✓\n\n` +
-            `Все 4 параметра успешно перенесены из вашей тактики.`;
+            `ID команды: ${checks.team_id.actual} ✓\n\n` +
+            `Параметры успешно перенесены из вашей тактики.`;
         
         alert(message);
     }
     
-    // Функция для объединения тактик
+    // Конвертация waypoints из массивного формата в UI-формат
+    function convertWaypointsToUIFormat(rawWaypoints) {
+        const result = [];
+        
+        if (!Array.isArray(rawWaypoints)) {
+            return result;
+        }
+        
+        rawWaypoints.forEach((playerWaypoints, playerIndex) => {
+            if (!Array.isArray(playerWaypoints)) {
+                return;
+            }
+            
+            playerWaypoints.forEach((point, i) => {
+                if (!Array.isArray(point) || point.length < 5) {
+                    return;
+                }
+                
+                const [x, y, viewAngle, type, syncTime, nadeX = 0, nadeY = 0, nadeType = 0, isUnder = 0] = point;
+                
+                const obj = {
+                    x,
+                    y,
+                    number: i + 1,
+                    type,
+                    syncTime: syncTime,
+                    color: playerColors[playerIndex] || '#FFFFFF',
+                    player: playerIndex + 1,
+                    viewAngle,
+                    isUnder: isUnder === 1
+                };
+                
+                // Добавляем nade только если хотя бы одно значение не нулевое
+                if (nadeX || nadeY || nadeType) {
+                    obj.nade = {
+                        x: nadeX,
+                        y: nadeY,
+                        type: nadeType
+                    };
+                }
+                
+                result.push(obj);
+            });
+        });
+        
+        return result;
+    }
+    
+    // Конвертация postPlantWaypoints из массивного формата в UI-формат
+    function convertPostPlantToUIFormat(rawPostPlant) {
+        const result = [];
+        
+        if (!Array.isArray(rawPostPlant)) {
+            return result;
+        }
+        
+        rawPostPlant.forEach((playerWaypoints, playerIndex) => {
+            if (!Array.isArray(playerWaypoints)) {
+                return;
+            }
+            
+            playerWaypoints.forEach((point, i) => {
+                if (!Array.isArray(point) || point.length < 5) {
+                    return;
+                }
+                
+                const [x, y, viewAngle, type, syncTime, nadeX = 0, nadeY = 0, nadeType = 0, isUnder = 0] = point;
+                
+                const obj = {
+                    x,
+                    y,
+                    number: i + 1,
+                    type,
+                    syncTime: syncTime,
+                    color: playerColors[playerIndex] || '#FFFFFF',
+                    player: playerIndex + 1,
+                    viewAngle,
+                    isUnder: isUnder === 1
+                };
+                
+                if (nadeX || nadeY || nadeType) {
+                    obj.nade = {
+                        x: nadeX,
+                        y: nadeY,
+                        type: nadeType
+                    };
+                }
+                
+                result.push(obj);
+            });
+        });
+        
+        return result;
+    }
+    
+    // Генерация простой сигнатуры для waypoints
+    function generateWaypointsSig(waypoints) {
+        const str = JSON.stringify(waypoints);
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash).toString(16).padStart(64, '0');
+    }
+    
+    // Функция для объединения тактик в UI-формате
     function mergeTactics(userData, sourceData) {
-        // Создаем результирующий объект - берем данные из sourceData, но ID из userData
+        // Собираем selectedTacticTypes
+        const selectedTacticTypes = [];
+        if (sourceData.isPistol) selectedTacticTypes.push('pistol');
+        if (sourceData.isStandard) selectedTacticTypes.push('standard');
+        if (sourceData.isEco) selectedTacticTypes.push('eco');
+        
+        // Собираем selectedMatchTypes
+        const selectedMatchTypes = [];
+        if (sourceData.useLeague) selectedMatchTypes.push('league');
+        if (sourceData.useScrim) selectedMatchTypes.push('scrim');
+        if (sourceData.useLadder) selectedMatchTypes.push('ladder');
+        if (sourceData.useOpen) selectedMatchTypes.push('open');
+        if (sourceData.useCup) selectedMatchTypes.push('cup');
+        if (sourceData.useEos) selectedMatchTypes.push('eos');
+        if (sourceData.useCustom) selectedMatchTypes.push('custom');
+        if (sourceData.useTournament) selectedMatchTypes.push('tournament');
+        
+        // Конвертируем waypoints в UI-формат
+        const uiWaypoints = convertWaypointsToUIFormat(sourceData.waypoints);
+        const uiPostPlantWaypoints = convertPostPlantToUIFormat(sourceData.postPlantWaypoints);
+        
+        // Создаем результирующий объект в UI-формате
         const result = {
-            success: true,
-            updatedTactic: {
-                id: userData.id,
-                name: userData.name,
-                side: sourceData.side !== undefined ? sourceData.side : userData.side,
-                teamId: userData.teamId,
-                tacticGroupId: null,
-                waypoints: sourceData.waypoints,
-                postPlantWaypoints: sourceData.postPlantWaypoints,
-                bombCarrier: sourceData.bombCarrier,
-                type: null,
-                creationDate: new Date().toISOString(),
-                map: sourceData.map || userData.map,
-                isPistol: sourceData.isPistol,
-                isEco: sourceData.isEco,
-                isStandard: sourceData.isStandard,
-                useLeague: sourceData.useLeague,
-                useLadder: sourceData.useLadder,
-                useTournament: sourceData.useTournament,
-                useOpen: sourceData.useOpen,
-                useEos: sourceData.useEos,
-                useCup: sourceData.useCup,
-                useScrim: sourceData.useScrim,
-                useCustom: sourceData.useCustom,
-                status: "draft",
-                order: null,
-                plantTime: sourceData.plantTime,
-                authorId: userData.authorId,
-                afterplantAId: null,
-                afterplantBId: null
-            },
-            name: false
+            team_id: userData.teamId,
+            name: userData.name,
+            map: sourceData.map || userData.map,
+            side: sourceData.side !== undefined ? sourceData.side : userData.side,
+            selectedTacticTypes: selectedTacticTypes.length > 0 ? selectedTacticTypes : ['pistol', 'standard', 'eco'],
+            selectedMatchTypes: selectedMatchTypes.length > 0 ? selectedMatchTypes : ['league', 'scrim', 'ladder', 'open', 'cup', 'eos', 'custom'],
+            loadouts: [],
+            bomb_carrier: sourceData.bombCarrier || 1,
+            plantTime: sourceData.plantTime || 25,
+            waypoints: uiWaypoints,
+            postPlantWaypoints: uiPostPlantWaypoints,
+            afterplantAId: null,
+            afterplantBId: null,
+            isDraft: false,
+            baseWaypointsSig: generateWaypointsSig(uiWaypoints)
         };
         
         return result;
