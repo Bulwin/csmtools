@@ -178,7 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 teamId: tactic.teamId,
                 authorId: tactic.authorId,
                 map: tactic.map,
-                side: tactic.side
+                side: tactic.side,
+                baseWaypointsSig: tactic.baseWaypointsSig || null
             };
             
         } catch (error) {
@@ -195,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const authorIdMatch = /"authorId"\s*:\s*(\d+)/.exec(text);
         const mapMatch = /"map"\s*:\s*"([^"]*)"/.exec(text);
         const sideMatch = /"side"\s*:\s*(\d+)/.exec(text);
+        const baseWaypointsSigMatch = /"baseWaypointsSig"\s*:\s*"([^"]*)"/.exec(text);
         
         if (!idMatch || !teamIdMatch) {
             return null;
@@ -206,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
             teamId: parseInt(teamIdMatch[1]),
             authorId: authorIdMatch ? parseInt(authorIdMatch[1]) : null,
             map: mapMatch ? mapMatch[1] : 'train',
-            side: sideMatch ? parseInt(sideMatch[1]) : 0
+            side: sideMatch ? parseInt(sideMatch[1]) : 0,
+            baseWaypointsSig: baseWaypointsSigMatch ? baseWaypointsSigMatch[1] : null
         };
     }
     
@@ -540,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
             afterplantAId: null,
             afterplantBId: null,
             isDraft: false,
-            baseWaypointsSig: generateWaypointsSig(uiWaypoints)
+            baseWaypointsSig: userData.baseWaypointsSig || generateWaypointsSig(uiWaypoints)
         };
         
         return result;
